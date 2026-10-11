@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Host Matches</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { background-color: #121212; color: #ffffff; display: flex; justify-content: center; }
+        .app-container { width: 100%; max-width: 800px; min-height: 100vh; background-color: #2c2c2c; display: flex; flex-direction: column; }
+        .header { background-color: #1d2235; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #ff4444; }
+        .header h2 { font-size: 20px; color: #fff; }
+        .content { padding: 20px; flex: 1; }
+        .section-title { font-size: 16px; color: #ddd; margin: 25px 0 15px 0; border-left: 4px solid #ff4444; padding-left: 10px; }
+        .admin-card { background: #3a3a3a; padding: 20px; border-radius: 10px; border-left: 5px solid #ff4444; margin-bottom: 20px; }
+        .admin-card input { width: 100%; padding: 12px; margin-bottom: 10px; background: #222; border: 1px solid #555; color: white; border-radius: 5px; }
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; color: white; }
+        .btn-create { background: #ff4444; } .btn-publish { background: #4caf50; } .btn-delete { background: #555; }
+        .flex-btns { display: flex; gap: 10px; margin-top: 10px; }
+        .badge { background: #ff9800; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header class="header">
+            <h2><i class="fa-solid fa-user-shield"></i> Host Dashboard</h2>
+            <div style="background: #ff4444; padding: 5px 10px; border-radius: 5px; font-weight: bold; font-size: 14px;">Admin Mode</div>
+        </header>
+
+        <div class="content">
+            <h3 class="section-title">Host New Match</h3>
+            <div class="admin-card">
+                <input type="text" id="mName" placeholder="Match Name (e.g. Bermuda 4v4)">
+                <div style="display: flex; gap: 10px;">
+                    <input type="time" id="mTime">
+                    <input type="text" id="mFee" placeholder="Fee (e.g. Free/₹10)">
+                    <input type="number" id="mSlots" placeholder="Max Players (e.g. 4)">
+                </div>
+                <button class="btn btn-create" onclick="createMatch()">+ Publish Tournament</button>
+            </div>
+
+            <h3 class="section-title">Manage Active Matches</h3>
+            <div id="adminMatchesList"></div>
+        </div>
+    </div>
+
+    <script>
+        let matches = JSON.parse(localStorage.getItem('gb_matches')) || [];
+
+        function createMatch() {
+            let name = document.getElementById('mName').value;
+            let time = document.getElementById('mTime').value;
+            let fee = document.getElementById('mFee').value;
+            let slots = document.getElementById('mSlots').value;
+
+            if(!name || !time || !fee || !slots) return alert("Please fill all details!");
+
+            matches.push({
+                id: Date.now().toString(),
+                name: name, time: time, fee: fee,
+                maxPlayers: parseInt(slots), joinedCount: 0,
+                roomId: "", roomPass: "", isLive: false
+            });
+
+            localStorage.setItem('gb_matches', JSON.stringify(matches));
+            renderMatches();
+            alert("Match Created!");
+        }
+
+        function publishRoom(id) {
+            let roomId = document.getElementById('room-'+id).value;
+            let roomPass = document.getElementById('pass-'+id).value;
+            if(!roomId || !roomPass) return alert("Enter ID and Password!");
+
+            let index = matches.findIndex(m => m.id === id);
+            matches[index].roomId = roomId;
+            matches[index].roomPass = roomPass;
+            matches[index].isLive = true;
+
+            localStorage.setItem('gb_matches', JSON.stringify(matches));
+            alert("Details Published!");
+            renderMatches();
+        }
+
+        function deleteMatch(id) {
+            if(confirm("Delete this match?")) {
+                matches = matches.filter(m => m.id !== id);
+                localStorage.setItem('gb_matches', JSON.stringify(matches));
+                renderMatches();
+            }
+        }
+
+        setInterval(() => {
+            matches = JSON.parse(localStorage.getItem('gb_matches')) || [];
+            renderMatches();
+        }, 2000);
+
+        function renderMatches() {
+            const list = document.getElementById('adminMatchesList');
+            list.innerHTML = "";
+            if(matches.length === 0) return list.innerHTML = "<p style='color:#aaa;'>No matches hosted.</p>";
+
+            matches.forEach(match => {
+                let isFull = match.joinedCount >= match.maxPlayers;
+                list.innerHTML += `
+                    <div class="admin-card">
+                        <div style="display:flex; justify-content:space-between;">
+                            <h3>${match.name}</h3>
+                            <span class="badge" style="background: ${isFull ? '#e53935' : '#4caf50'};">
+                                Joined: ${match.joinedCount} / ${match.maxPlayers}
+                            </span>
+                        </div>
+                        <p style="color:#bbb; margin: 5px 0 15px 0;">🕒 ${match.time} | 💰 ${match.fee}</p>
+                        <input type="text" id="room-${match.id}" placeholder="Room ID" value="${match.roomId}">
+                        <input type="text" id="pass-${match.id}" placeholder="Password" value="${match.roomPass}">
+                        <div class="flex-btns">
+                            <button class="btn btn-publish" onclick="publishRoom('${match.id}')">Publish</button>
+                            <button class="btn btn-delete" onclick="deleteMatch('${match.id}')"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+        renderMatches();
+    </script>
+</body>
+</html>
