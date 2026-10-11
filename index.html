@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grind Battle App</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { background-color: #333; color: #fff; display: flex; justify-content: center; min-height: 100vh; }
+        
+        /* Auth Screen */
+        #auth-screen { display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; max-width: 480px; background: #121212; padding: 20px; }
+        .auth-card { background: #1e2235; padding: 30px; border-radius: 12px; width: 100%; text-align: center; border-top: 5px solid #ff9800; }
+        .input-group { margin-bottom: 15px; text-align: left; }
+        .input-group label { display: block; margin-bottom: 5px; font-size: 13px; color: #ccc; }
+        .input-group input { width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #444; background: #2a2d3e; color: #fff; outline: none; }
+        .btn-auth { width: 100%; padding: 12px; background: #ff9800; border: none; border-radius: 6px; font-weight: bold; color: white; cursor: pointer; margin-top: 10px; }
+        .toggle-text { margin-top: 15px; font-size: 14px; color: #aaa; cursor: pointer; }
+        .toggle-text span { color: #ff9800; font-weight: bold; }
+        
+        /* App Layout */
+        #app-screen { display: none; flex-direction: column; width: 100%; max-width: 480px; background-color: #333; min-height: 100vh; position: relative; }
+        .header { background-color: #1d2235; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; }
+        .user-info { display: flex; align-items: center; gap: 15px; }
+        .logo-circle { width: 40px; height: 40px; background: linear-gradient(45deg, #ff9800, #ff5722); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; border: 2px solid #fff; }
+        .coin-badge { background: #fff; color: #000; padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 14px; }
+        
+        .content { padding: 20px; padding-bottom: 100px; flex: 1; overflow-y: auto; }
+        .section-title { font-size: 14px; color: #ddd; margin: 20px 0 15px 0; }
+        
+        /* Circular Icons Grid */
+        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; text-align: center; }
+        .circle-btn { background: #ff6b00; width: 60px; height: 60px; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin: 0 auto 8px auto; font-size: 24px; color: white; cursor: pointer; }
+        .icon-label { font-size: 12px; color: #ddd; }
+        
+        /* Square Cards Grid */
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; text-align: center; }
+        .square-card { background: #fff; border-radius: 12px; padding: 20px 10px; color: #000; cursor: pointer; }
+        .square-card i { color: #6200ea; font-size: 28px; margin-bottom: 10px; }
+        .square-card span { display: block; font-size: 13px; font-weight: 500; }
+
+        /* Match Cards */
+        .match-card { background: #fff; color: #000; padding: 20px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+        .match-card h3 { margin-bottom: 5px; color: #333; }
+        .btn-match { width: 100%; padding: 12px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; color: white; margin-top: 10px; background: #ff9800; }
+        .btn-joined { background: #4caf50; }
+        .btn-soldout { background: #e53935; }
+        .room-box { background: #f1f1f1; padding: 15px; margin-top: 15px; border-radius: 5px; text-align: center; border: 1px dashed #4caf50; }
+        .room-box span { color: #d32f2f; font-size: 18px; font-weight: bold; }
+
+        /* Bottom Nav */
+        .bottom-nav { position: absolute; bottom: 0; width: 100%; background: #263238; display: flex; justify-content: space-around; padding: 12px 0; z-index: 10; }
+        .nav-item { color: #888; text-align: center; font-size: 20px; cursor: pointer; }
+        .nav-item.active { color: #fff; }
+        
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <!-- AUTHENTICATION SCREEN -->
+    <div id="auth-screen">
+        <div class="auth-card">
+            <div class="logo-circle" style="width:70px; height:70px; font-size:28px;">GB</div>
+            <h2 id="auth-title" style="margin-bottom:20px;">Login</h2>
+            
+            <div class="input-group">
+                <label>User ID (Email)</label>
+                <input type="text" id="auth-email" placeholder="Tumhara Email">
+            </div>
+            <div class="input-group">
+                <label>Password</label>
+                <input type="password" id="auth-password" placeholder="Password daalo">
+            </div>
+            
+            <button class="btn-auth" id="login-btn" onclick="loginUser()">Login to App</button>
+            <button class="btn-auth hidden" id="signup-btn" style="background:#4caf50;" onclick="registerUser()">Create Account</button>
+            
+            <p class="toggle-text" id="toggle-to-signup" onclick="toggleAuth('signup')">Naya account banayen? <span>Sign Up</span></p>
+            <p class="toggle-text hidden" id="toggle-to-login" onclick="toggleAuth('login')">Pehle se account hai? <span>Login</span></p>
+        </div>
+    </div>
+
+    <!-- MAIN APP SCREEN -->
+    <div id="app-screen">
+        <header class="header">
+            <div class="user-info">
+                <div class="logo-circle">GB</div>
+                <div>
+                    <small style="color:#aaa; font-size:12px;">Welcome Back,</small><br>
+                    <strong id="display-user" style="font-size:16px;">Player</strong>
+                </div>
+            </div>
+            <div style="display:flex; gap:10px; align-items:center;">
+                <div class="coin-badge"><i class="fa-solid fa-coins" style="color:#ffb300;"></i> 5</div>
+                <button onclick="logoutUser()" style="background:none; border:none; color:#ff4444; font-size:20px; cursor:pointer;"><i class="fa-solid fa-right-from-bracket"></i></button>
+            </div>
+        </header>
+
+        <div class="content">
+            <h3 class="section-title">Account Details</h3>
+            <div class="grid-4">
+                <div><div class="circle-btn"><i class="fa-solid fa-user"></i></div><span class="icon-label">My Profile</span></div>
+                <div><div class="circle-btn"><i class="fa-solid fa-wallet"></i></div><span class="icon-label">My Wallet</span></div>
+                <div><div class="circle-btn"><i class="fa-solid fa-trophy"></i></div><span class="icon-label">Top Players</span></div>
+                <div><div class="circle-btn"><i class="fa-solid fa-headset"></i></div><span class="icon-label">Contact Us</span></div>
+            </div>
+
+            <h3 class="section-title">My Contest</h3>
+            <div class="grid-3">
+                <div class="square-card"><i class="fa-solid fa-trophy"></i><span>Upcoming</span></div>
+                <div class="square-card"><i class="fa-solid fa-trophy"></i><span>Ongoing</span></div>
+                <div class="square-card"><i class="fa-solid fa-trophy"></i><span>Completed</span></div>
+            </div>
+
+            <h3 class="section-title">eSport Games</h3>
+            <div id="user-matches-list"></div>
+        </div>
+
+        <nav class="bottom-nav">
+            <div class="nav-item active"><i class="fa-solid fa-house"></i></div>
+            <div class="nav-item"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+            <div class="nav-item"><i class="fa-solid fa-certificate"></i></div>
+            <div class="nav-item"><i class="fa-solid fa-wallet"></i></div>
+            <div class="nav-item"><i class="fa-regular fa-face-smile"></i></div>
+        </nav>
+    </div>
+
+    <script>
+        let usersDB = JSON.parse(localStorage.getItem('gb_users')) || [];
+        let currentUser = localStorage.getItem('gb_logged_in_user');
+
+        if(currentUser) showApp();
+
+        function toggleAuth(mode) {
+            if(mode === 'signup') {
+                document.getElementById('auth-title').innerText = "Sign Up";
+                document.getElementById('login-btn').classList.add('hidden');
+                document.getElementById('signup-btn').classList.remove('hidden');
+                document.getElementById('toggle-to-signup').classList.add('hidden');
+                document.getElementById('toggle-to-login').classList.remove('hidden');
+            } else {
+                document.getElementById('auth-title').innerText = "Login";
+                document.getElementById('login-btn').classList.remove('hidden');
+                document.getElementById('signup-btn').classList.add('hidden');
+                document.getElementById('toggle-to-signup').classList.remove('hidden');
+                document.getElementById('toggle-to-login').classList.add('hidden');
+            }
+        }
+
+        function registerUser() {
+            let email = document.getElementById('auth-email').value.trim();
+            let pass = document.getElementById('auth-password').value.trim();
+            if(!email || !pass) return alert("Email aur Password dono daalo!");
+            
+            if(usersDB.find(u => u.email === email)) return alert("ID pehle se bani hui hai. Login karein.");
+
+            usersDB.push({ email: email, password: pass, joinedMatches: [] });
+            localStorage.setItem('gb_users', JSON.stringify(usersDB));
+            performLogin(email);
+        }
+
+        function loginUser() {
+            let email = document.getElementById('auth-email').value.trim();
+            let pass = document.getElementById('auth-password').value.trim();
+            if(!email || !pass) return alert("Email aur Password daalo!");
+
+            let user = usersDB.find(u => u.email === email);
+            if(!user) alert("Account nahi mila! Pehle Sign Up karein.");
+            else if (user.password !== pass) alert("Wrong Password ❌\nKripya sahi password daalein.");
+            else performLogin(email);
+        }
+
+        function performLogin(email) {
+            localStorage.setItem('gb_logged_in_user', email);
+            currentUser = email;
+            showApp();
+        }
+
+        function logoutUser() {
+            localStorage.removeItem('gb_logged_in_user');
+            currentUser = null;
+            document.getElementById('app-screen').style.display = 'none';
+            document.getElementById('auth-screen').style.display = 'flex';
+        }
+
+        function showApp() {
+            document.getElementById('auth-screen').style.display = 'none';
+            document.getElementById('app-screen').style.display = 'flex';
+            document.getElementById('display-user').innerText = currentUser.split('@')[0];
+            renderMatches();
+        }
+
+        function joinMatch(matchId) {
+            let matchesDB = JSON.parse(localStorage.getItem('gb_matches')) || [];
+            let userIndex = usersDB.findIndex(u => u.email === currentUser);
+            let matchIndex = matchesDB.findIndex(m => m.id === matchId);
+
+            if(matchesDB[matchIndex].joinedCount >= matchesDB[matchIndex].maxPlayers) {
+                return alert("Sorry! Ye room full ho chuka hai (Sold Out).");
+            }
+
+            let myJoined = usersDB[userIndex].joinedMatches || [];
+            if(!myJoined.includes(matchId)) {
+                myJoined.push(matchId);
+                usersDB[userIndex].joinedMatches = myJoined;
+                localStorage.setItem('gb_users', JSON.stringify(usersDB));
+
+                matchesDB[matchIndex].joinedCount += 1;
+                localStorage.setItem('gb_matches', JSON.stringify(matchesDB));
+
+                alert("Joined Successfully!");
+                renderMatches();
+            }
+        }
+
+        setInterval(() => {
+            if(currentUser) renderMatches();
+        }, 2000);
+
+        function renderMatches() {
+            let matchesDB = JSON.parse(localStorage.getItem('gb_matches')) || [];
+            let uList = document.getElementById('user-matches-list');
+            uList.innerHTML = "";
+
+            if(matchesDB.length === 0) return uList.innerHTML = "<p style='color:#aaa; text-align:center;'>No matches hosted.</p>";
+
+            let userIndex = usersDB.findIndex(u => u.email === currentUser);
+            let myJoined = usersDB[userIndex]?.joinedMatches || [];
+
+            matchesDB.forEach(match => {
+                let isFull = match.joinedCount >= match.maxPlayers;
+                let amIJoined = myJoined.includes(match.id);
+
+                let btn = "";
+                if(amIJoined) btn = `<button class="btn-match btn-joined" disabled>Joined ✔️</button>`;
+                else if(isFull) btn = `<button class="btn-match btn-soldout" disabled>Sold Out 🚫</button>`;
+                else btn = `<button class="btn-match" onclick="joinMatch('${match.id}')">Join Match</button>`;
+
+                let roomInfo = (amIJoined && match.isLive) ? 
+                    `<div class="room-box">
+                        <p style="color:#4caf50; margin:0 0 5px 0;">✅ Match is Live!</p>
+                        Room ID: <span>${match.roomId}</span><br>
+                        Password: <span>${match.roomPass}</span>
+                     </div>` : ``;
+
+                uList.innerHTML += `
+                    <div class="match-card">
+                        <div style="display:flex; justify-content:space-between;">
+                            <h3>${match.name}</h3>
+                            <span style="background:#4caf50; color:white; padding:3px 8px; border-radius:4px; font-size:12px; font-weight:bold;">${match.fee}</span>
+                        </div>
+                        <p style="color:#666; font-size:14px; margin-top:5px;">🕒 Time: ${match.time}</p>
+                        <div style="background:#f5f5f5; padding:5px; border-radius:5px; font-size:12px; color:#333; margin-top:10px; display:inline-block; font-weight:bold;">
+                            Players: ${match.joinedCount} / ${match.maxPlayers}
+                        </div>
+                        ${btn}
+                        ${roomInfo}
+                    </div>
+                `;
+            });
+        }
+    </script>
+</body>
+</html>
